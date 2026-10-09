@@ -1,5 +1,5 @@
 {
-  "name": "dsh-web-search-tavily",
+  "name": "dsh-web-search-tavily-relay",
   "version": "0.2.0",
   "description": "Tavily-compatible web search provider for the DeepSeek Harness web seam (ctx.web): the official Tavily API, a Tavily-shaped relay, or an OpenAI-compatible gateway, all from configuration",
   "keywords": [
@@ -16,11 +16,11 @@
   "author": "hjnvv00v",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hjnvv00v/dsh-web-search-tavily.git"
+    "url": "git+https://github.com/hjnvv00v/dsh-web-search-tavily-relay.git"
   },
-  "homepage": "https://github.com/hjnvv00v/dsh-web-search-tavily#readme",
+  "homepage": "https://github.com/hjnvv00v/dsh-web-search-tavily-relay#readme",
   "bugs": {
-    "url": "https://github.com/hjnvv00v/dsh-web-search-tavily/issues"
+    "url": "https://github.com/hjnvv00v/dsh-web-search-tavily-relay/issues"
   },
   "type": "module",
   "main": "lib/index.js",

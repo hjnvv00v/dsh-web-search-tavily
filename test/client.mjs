@@ -161,7 +161,7 @@ console.log('\nbundle')
 
 await check('the bundle declares the package id the module system attaches it by', () => {
   assert.ok(loaded !== undefined, 'the bundle must call window.__ModuleLoader__.load')
-  assert.equal(loaded.id, 'dsh-web-search-tavily')
+  assert.equal(loaded.id, 'dsh-web-search-tavily-relay')
   assert.equal(typeof loaded.factory, 'function')
 })
 
@@ -228,8 +228,8 @@ clientModule.apply(ctx)
 await check('the card registers into both the bundle page and the row page', () => {
   const byName = Object.fromEntries(registered.map((entry) => [entry.options.name, entry]))
   assert.deepEqual(Object.keys(byName).sort(), ['plugins.bundle.config', 'plugins.row.config'])
-  assert.equal(byName['plugins.bundle.config'].options.key, 'dsh-web-search-tavily')
-  assert.equal(byName['plugins.row.config'].options.key, 'dsh-web-search-tavily#web-search-tavily')
+  assert.equal(byName['plugins.bundle.config'].options.key, 'dsh-web-search-tavily-relay')
+  assert.equal(byName['plugins.row.config'].options.key, 'dsh-web-search-tavily-relay#web-search-tavily')
   for (const entry of registered) {
     assert.equal(entry.options.locale, 'webSearchTavily')
     assert.equal(typeof entry.component, 'function')

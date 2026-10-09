@@ -62,6 +62,8 @@ const PATCH_FIXTURE = [
   '  config:',
   '    transcriptView: standard',
   '',
+  // Marker and package name below are the ORIGINAL ones: this fixture reproduces what an older
+  // installer wrote, so uninstall must still recognise it after the package was renamed.
   '# >>> dsh-web-search-tavily (managed block; do not edit by hand) >>>',
   '- id: web',
   "  name: '@deepseek-ai/dsh-web'",
@@ -117,13 +119,13 @@ check('install leaves the profile patch byte-for-byte alone, on a repeat run too
 
 check('the bundle is selected and the dependency recorded', () => {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  assert.ok(manifest.dsh.profile.bundles.includes('dsh-web-search-tavily'))
-  assert.equal(manifest.dependencies['dsh-web-search-tavily'], `file:${sourceDir.replaceAll('\\', '/')}`)
-  assert.equal(manifest.dsh.profile.bundles.filter((name) => name === 'dsh-web-search-tavily').length, 1)
+  assert.ok(manifest.dsh.profile.bundles.includes('dsh-web-search-tavily-relay'))
+  assert.equal(manifest.dependencies['dsh-web-search-tavily-relay'], `file:${sourceDir.replaceAll('\\', '/')}`)
+  assert.equal(manifest.dsh.profile.bundles.filter((name) => name === 'dsh-web-search-tavily-relay').length, 1)
 })
 
 check('the package is copied without the development node_modules', () => {
-  const target = join(profileDir, 'node_modules', 'dsh-web-search-tavily')
+  const target = join(profileDir, 'node_modules', 'dsh-web-search-tavily-relay')
   assert.ok(existsSync(join(target, 'lib', 'index.js')))
   assert.ok(existsSync(join(target, 'lib', 'client.js')))
   assert.ok(existsSync(join(target, 'cordis.patch.yml')))
@@ -155,7 +157,7 @@ check('the shipped bundle patch selects this provider and mounts the plugin', ()
   assert.match(text, /^\s+searchProvider: tavily$/mu, 'the seam must be pointed at this provider')
   assert.match(text, /^- insert:$/mu)
   assert.match(text, /^\s+- id: web-search-tavily$/mu, 'the loader row must be inserted')
-  assert.match(text, /^\s+name: 'dsh-web-search-tavily'$/mu)
+  assert.match(text, /^\s+name: 'dsh-web-search-tavily-relay'$/mu)
   // fetchProvider is deliberately absent: restating it would pin a fetch backend this plugin does
   // not own, and a stock profile mounts exactly one, which the seam auto-selects.
   const body = text.split('\n').filter((line) => !line.trimStart().startsWith('#')).join('\n')
@@ -173,8 +175,8 @@ check('uninstall removes the legacy managed entry and this plugin\'s configurati
   assert.match(patch, /- id: ui-chat/u)
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   assert.deepEqual(manifest.dsh.profile.bundles, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'dshmarket'])
-  assert.equal(manifest.dependencies['dsh-web-search-tavily'], undefined)
-  assert.ok(!existsSync(join(profileDir, 'node_modules', 'dsh-web-search-tavily')))
+  assert.equal(manifest.dependencies['dsh-web-search-tavily-relay'], undefined)
+  assert.ok(!existsSync(join(profileDir, 'node_modules', 'dsh-web-search-tavily-relay')))
 })
 
 rmSync(sandbox, { recursive: true, force: true })

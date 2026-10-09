@@ -21,17 +21,23 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** Package name, and the bundle name the profile's manifest selects. */
-export const PACKAGE = 'dsh-web-search-tavily'
+export const PACKAGE = 'dsh-web-search-tavily-relay'
 /** Loader row id the bundle patch inserts; also this plugin's settings namespace. */
 export const BUNDLE_ROW_ID = 'web-search-tavily'
 /** Provider id the seam is pointed at. */
 export const PROVIDER_ID = 'tavily'
 /** Loader entry id the installer owns and rewrites on every run. */
 export const MANAGED_ID = 'web'
-/** Marker comments around the installer-owned entry. */
+/**
+ * Marker comments around the installer-owned entry.
+ *
+ * These spell the ORIGINAL package name on purpose and must not follow a rename: they are the
+ * fingerprint an uninstall matches against to find and remove a block an earlier version wrote.
+ */
 export const BEGIN = '# >>> dsh-web-search-tavily (managed block; do not edit by hand) >>>'
 export const END = '# <<< dsh-web-search-tavily <<<'
 
+/** Likewise a legacy fingerprint — the suffix already present on backups sitting in the profile. */
 const BACKUP_SUFFIX = '.bak-dsh-web-search-tavily'
 
 /** Files that make up the installed package; `test` and `node_modules` stay in the source tree. */

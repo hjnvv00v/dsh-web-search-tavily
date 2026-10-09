@@ -1,4 +1,4 @@
-# dsh-web-search-tavily
+# dsh-web-search-tavily-relay
 
 Tavily-backed web search for the DeepSeek Harness web seam (`ctx.web`) — with the endpoint,
 credential, and wire protocol all configurable, so a **relay or gateway domain works exactly like
@@ -71,7 +71,7 @@ Tavily adds later needs no plugin change:
 
 ```yaml
 - id: web-search-tavily
-  name: dsh-web-search-tavily
+  name: dsh-web-search-tavily-relay
   config:
     baseURL: https://relay.example
     defaultParameters:
@@ -122,7 +122,7 @@ Without any key, a request to `https://api.tavily.com` is sent in Tavily's keyle
 ## Install
 
 ```sh
-dsh plugin --profile web add github:hjnvv00v/dsh-web-search-tavily
+dsh plugin --profile web add github:hjnvv00v/dsh-web-search-tavily-relay
 ```
 
 `web` is the profile name — use your own (`desktop` for the desktop app). Then open the plugin's

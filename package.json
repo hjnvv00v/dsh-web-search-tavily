@@ -59,6 +59,9 @@
       "platform": "web"
     }
   },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "~3.18.4"
+  },
   "peerDependencies": {
     "@deepseek-ai/schemastery": "~3.18.4"
   },

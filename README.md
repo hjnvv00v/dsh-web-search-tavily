@@ -162,9 +162,11 @@ node test/smoke.mjs    # host half: protocols, auth, errors, and the Host's sche
 node test/client.mjs   # browser half: bundle contract, slot registration, and a rendered card
 ```
 
-Nothing reaches the network: `test/smoke.mjs` spins up its own stub endpoint on `127.0.0.1`. Run
-without `npm install`, the schema-dependent checks report `skip` rather than failing — they can
-only run when the peer resolves.
+Nothing in the tests reaches the network: `test/smoke.mjs` spins up its own stub endpoint on
+`127.0.0.1`. `@deepseek-ai/schemastery` is an **optional** peer — at runtime the Host supplies its
+own copy, so the plugin loads with or without it — and is listed under `devDependencies` purely so
+that `npm install` fetches a copy for these checks. Run without it, the schema-dependent checks
+report `skip` rather than failing.
 
 `test/smoke.mjs` deliberately round-trips the Config schema through the **host's own** copy of
 `@deepseek-ai/schemastery`: a plugin resolves the peers the Host supplies, and the settings

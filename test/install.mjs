@@ -1,10 +1,14 @@
 /**
  * Installer regression test.
  *
- * The failure this pins down is real and was hit once: the settings page writes a plugin's
- * configuration into the same patch file the installer edits, and it can land *between* the
- * installer's marker comments. An installer that trusts the markers to fence off only what it
- * wrote deletes the user's configuration on the next run.
+ * Two failures are pinned down here, both real and both hit once:
+ *
+ * 1. The settings page writes a plugin's configuration into the same patch file the installer
+ *    edits, and it can land *between* the installer's marker comments. An installer that trusts the
+ *    markers to fence off only what it wrote deletes the user's configuration on the next run.
+ * 2. The installer used to *write* the seam's provider pin into the profile patch. That is not its
+ *    job — the plugin's own `cordis.patch.yml` carries the pin, and a plain `dsh plugin add` never
+ *    runs this script at all. So the installer must now leave the profile patch alone.
  *
  * Run with: node test/install.mjs
  */
@@ -21,6 +25,7 @@ const home = join(sandbox, 'home')
 const profileDir = join(home, 'profiles', 'desktop')
 const patchPath = join(profileDir, 'cordis.patch.yml')
 const manifestPath = join(profileDir, 'package.json')
+const shippedPatch = join(sourceDir, 'cordis.patch.yml')
 
 let failures = 0
 let passes = 0
@@ -42,7 +47,10 @@ function run(action, target = home) {
   return action({ home: target, profile: 'desktop', dryRun: false, log: () => {} })
 }
 
-/** A patch file shaped the way a real profile's looks after the settings page has written to it. */
+/**
+ * A patch file shaped the way a real profile's looks after an older installer ran and the settings
+ * page then wrote this plugin's configuration into the marker region.
+ */
 const PATCH_FIXTURE = [
   '# Your patch layer for this dsh profile.',
   '- id: ui-theme',
@@ -97,13 +105,14 @@ check('the pre-existing entries survive', () => {
   assert.match(patch, /preference: dark/u)
 })
 
-check('exactly one managed web override exists, after a second install too', () => {
+check('install leaves the profile patch byte-for-byte alone, on a repeat run too', () => {
+  const before = readFileSync(patchPath, 'utf8')
   run(install)
-  const patch = readFileSync(patchPath, 'utf8')
-  assert.equal(patch.match(/^- id: web$/gmu)?.length, 1, 'the managed entry must not be duplicated')
-  assert.equal(patch.match(/- id: web-search-tavily$/gmu)?.length, 1, 'the user entry must not be duplicated')
-  assert.equal(patch.match(/managed block; do not edit by hand/gu)?.length, 1, 'the marker must not be duplicated')
-  assert.match(patch, /baseURL: https:\/\/relay\.example/u, 'baseURL must survive a second install')
+  assert.equal(
+    readFileSync(patchPath, 'utf8'),
+    before,
+    'the shipped cordis.patch.yml owns the provider pin; the installer must not write to the profile',
+  )
 })
 
 check('the bundle is selected and the dependency recorded', () => {
@@ -121,22 +130,41 @@ check('the package is copied without the development node_modules', () => {
   assert.ok(!existsSync(join(target, 'node_modules')), 'the dev-only peer junctions must not ship')
 })
 
-check('a profile that already overrides web itself is left alone', () => {
+check('a profile that overrides web itself is reported, and never overwritten', () => {
   const foreign = join(sandbox, 'foreign')
   const foreignProfile = join(foreign, 'profiles', 'desktop')
   mkdirSync(foreignProfile, { recursive: true })
-  writeFileSync(join(foreignProfile, 'cordis.patch.yml'), '- id: web\n  name: "@deepseek-ai/dsh-web"\n  config:\n    fetchProvider: http\n')
+  const foreignPatch = '- id: web\n  name: "@deepseek-ai/dsh-web"\n  config:\n    fetchProvider: http\n'
+  writeFileSync(join(foreignProfile, 'cordis.patch.yml'), foreignPatch)
   writeFileSync(join(foreignProfile, 'package.json'), '{"name":"p","private":true}\n')
   const result = run(install, foreign)
   assert.equal(result.foreignWebEntry, true, 'a foreign web override must be detected, not overwritten')
-  const patch = readFileSync(join(foreignProfile, 'cordis.patch.yml'), 'utf8')
-  assert.match(patch, /fetchProvider: http/u, 'a foreign web override must be untouched')
-  assert.doesNotMatch(patch, /managed block/u, 'no managed entry may be written over a foreign one')
+  assert.equal(
+    readFileSync(join(foreignProfile, 'cordis.patch.yml'), 'utf8'),
+    foreignPatch,
+    'a foreign web override must be untouched — it is applied last, so it wins over the bundle pin',
+  )
+})
+
+check('the shipped bundle patch selects this provider and mounts the plugin', () => {
+  const text = readFileSync(shippedPatch, 'utf8')
+  // A patch replaces the whole `config` of the entry it targets rather than merging into it, so the
+  // pin has to be stated here: registering a provider does not select it, and the seam refuses to
+  // guess between two usable ones.
+  assert.match(text, /^- id: web$/mu, 'the web entry must be targeted at top level')
+  assert.match(text, /^\s+searchProvider: tavily$/mu, 'the seam must be pointed at this provider')
+  assert.match(text, /^- insert:$/mu)
+  assert.match(text, /^\s+- id: web-search-tavily$/mu, 'the loader row must be inserted')
+  assert.match(text, /^\s+name: 'dsh-web-search-tavily'$/mu)
+  // fetchProvider is deliberately absent: restating it would pin a fetch backend this plugin does
+  // not own, and a stock profile mounts exactly one, which the seam auto-selects.
+  const body = text.split('\n').filter((line) => !line.trimStart().startsWith('#')).join('\n')
+  assert.doesNotMatch(body, /fetchProvider/u, 'the patch must not pin a fetch provider it does not own')
 })
 
 run(uninstall)
 
-check('uninstall removes the managed entry and this plugin\'s configuration, and nothing else', () => {
+check('uninstall removes the legacy managed entry and this plugin\'s configuration, and nothing else', () => {
   const patch = readFileSync(patchPath, 'utf8')
   assert.doesNotMatch(patch, /searchProvider: tavily/u)
   assert.doesNotMatch(patch, /- id: web-search-tavily/u, 'the plugin config belongs to the plugin')

@@ -1,14 +1,16 @@
 /**
  * Install (or remove) this plugin in a DSH profile.
  *
- * The plugin is a bundle: the profile's `dsh.profile.bundles` selects it, its own
- * `cordis.patch.yml` inserts the loader row, and the row id is the settings namespace the
- * browser half binds. The seam also refuses to guess between two usable search providers, so the
- * installer pins `web.searchProvider` in the profile patch.
+ * The plugin is a bundle: the profile's `dsh.profile.bundles` selects it, and its own
+ * `cordis.patch.yml` both inserts the loader row and pins `web.searchProvider` — the row id is the
+ * settings namespace the browser half binds. Nothing else has to be written, so this script only
+ * copies the package in and registers it.
  *
- * The patch file is shared with the settings page, which writes this plugin's configuration into
- * it — sometimes between the installer's marker comments. The installer therefore rewrites only
- * the one entry it owns and leaves every other entry alone, and it backs up each file it edits.
+ * The profile patch is still read on install, to warn when the profile overrides `web` in its own
+ * layer (which is applied last and would therefore beat the bundle's pin), and written on uninstall
+ * to drop the marker-delimited entry older versions of this installer used to add. The settings
+ * page also writes this plugin's configuration into that file, so removal recognises whole entries
+ * and never deletes anything else. Every edited file is backed up once.
  *
  *   node install.mjs [--profile desktop] [--home <harness home>] [--uninstall] [--dry-run]
  *
@@ -68,7 +70,12 @@ function writeWithBackup(path, contents, options) {
   options.log(`  ${options.dryRun ? 'would write' : 'wrote'} ${path}`)
 }
 
-/** The block that pins the seam's search provider. */
+/**
+ * The marker-delimited block older versions of this installer wrote into a profile patch.
+ *
+ * The plugin's own `cordis.patch.yml` pins the provider now, so nothing calls this on install. It
+ * stays so an uninstall can still recognise and remove what an earlier version left behind.
+ */
 export function managedBlock() {
   return [
     BEGIN,
@@ -194,21 +201,16 @@ export function install(options) {
   manifest.dsh.profile.bundles = bundles.includes(PACKAGE) ? bundles : [...bundles, PACKAGE]
   writeWithBackup(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, options)
 
-  // 3. Pin the seam's search provider in the profile patch layer.
-  if (!existsSync(patchPath)) {
-    throw new Error(`No profile patch at ${patchPath}; create it, then add:\n\n${managedBlock()}`)
-  }
-  const patchText = readFileSync(patchPath, 'utf8')
-  const foreign = hasForeignWebEntry(patchText)
+  // 3. Report a profile-layer `web` override. The bundle's pin lives in the plugin's own
+  //    cordis.patch.yml; a profile patch is applied after every bundle layer, so its config wins.
+  const foreign = existsSync(patchPath) && hasForeignWebEntry(readFileSync(patchPath, 'utf8'))
   if (foreign) {
     options.log(
-      '\nThis profile already overrides the "web" entry, so the installer left it alone.\n'
-      + `Add this under that entry's config by hand:\n\n    searchProvider: ${PROVIDER_ID}\n\n`
+      '\nThis profile overrides the "web" entry in its own patch layer, which is applied after\n'
+      + 'every bundle layer — so that config wins over the pin this plugin ships. Make sure it\n'
+      + `selects this provider:\n\n    searchProvider: ${PROVIDER_ID}\n\n`
       + 'Without it, two usable search providers leave web_search ambiguous.',
     )
-  } else {
-    const stripped = stripManagedBlock(patchText).replace(/\n*$/u, '\n')
-    writeWithBackup(patchPath, `${stripped}\n${managedBlock()}`, options)
   }
 
   options.log(

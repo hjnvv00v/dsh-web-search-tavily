@@ -1,7 +1,23 @@
-# dsh bundle patch: inserts this plugin into a profile's layer stack.
+# dsh bundle patch: mounts this plugin and points the web seam's search at it.
 #
 # The inserted row's id is also this plugin's settings namespace, which is what the browser half
 # binds through `ctx.configForms.get('web-search-tavily')`.
+#
+# The `web` override is what makes a plain `dsh plugin add` sufficient on its own. Registering a
+# provider does not select it, and the seam refuses to guess between two usable ones — so without
+# this line the plugin would mount, register `tavily`, and still never be called.
+#
+# A patch replaces the whole `config` object of the entry it targets rather than merging into it,
+# so this restates only `searchProvider` and leaves `fetchProvider` unset: a stock profile mounts
+# exactly one fetch provider (`dsh-web-fetch-http`), which the seam then auto-selects.
+#
+# A profile's own cordis.patch.yml is applied after every bundle layer, so a profile that wants a
+# different search backend sets `searchProvider` there and wins over this file.
+- id: web
+  name: '@deepseek-ai/dsh-web'
+  config:
+    searchProvider: tavily
+
 - insert:
     - id: web-search-tavily
       name: 'dsh-web-search-tavily'

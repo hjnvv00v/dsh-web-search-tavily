@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-tavily",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tavily-compatible web search provider for the DeepSeek Harness web seam (ctx.web): the official Tavily API, a Tavily-shaped relay, or an OpenAI-compatible gateway, all from configuration",
   "keywords": [
     "deepseek-harness",
@@ -42,7 +42,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node test/smoke.mjs && node test/client.mjs"
+    "test": "node test/smoke.mjs && node test/client.mjs && node test/install.mjs"
   },
   "dsh": {
     "bundle": {

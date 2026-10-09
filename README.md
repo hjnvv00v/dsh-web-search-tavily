@@ -122,20 +122,34 @@ Without any key, a request to `https://api.tavily.com` is sent in Tavily's keyle
 ## Install
 
 ```sh
-# From this package's directory:
+dsh plugin --profile web add github:hjnvv00v/dsh-web-search-tavily
+```
+
+`web` is the profile name — use your own (`desktop` for the desktop app). Then open the plugin's
+page under **Plugins** in the Web sidebar to set the credential and, if you use a relay, the
+endpoint, and reload the UI.
+
+A plain `dsh plugin add` is enough on its own. The package ships a `cordis.patch.yml`, so the
+bundle both mounts its loader row *and* points the `web` entry's `searchProvider` at `tavily` —
+see [Selecting the provider](#selecting-the-provider) for why the pin has to travel with the
+plugin.
+
+### From a clone
+
+```sh
 node install.mjs                 # copies into the desktop profile and wires the seam
 node install.mjs --profile web   # or any other profile
 ```
 
 The installer copies the package into `<profile>/node_modules`, adds it to the profile's
-`dsh.profile.bundles`, and points the `web` entry's `searchProvider` at it. It is idempotent, keeps
-a `.bak` of every file it edits, and `node install.mjs --uninstall` reverses all of it.
-
-After installing, reload the Web UI. If the profile has no HMR, restart DSH.
+`dsh.profile.bundles`, and records the dependency. It is idempotent, backs up every file it edits,
+and `node install.mjs --uninstall` reverses all of it.
 
 ## Selecting the provider
 
-`ctx.web` refuses to guess when more than one provider is usable, so the installer pins it:
+`ctx.web` reads `searchProvider` once, when the seam is constructed, and refuses to guess when more
+than one provider is usable — an unselected provider is a provider that is never called. So the pin
+ships inside the plugin's own `cordis.patch.yml`:
 
 ```yaml
 - id: web
@@ -144,7 +158,14 @@ After installing, reload the Web UI. If the profile has no HMR, restart DSH.
     searchProvider: tavily
 ```
 
-Change `tavily` to match `providerId` if you renamed it.
+A patch replaces the whole `config` object of the entry it targets rather than merging into it, so
+this restates only `searchProvider`. `fetchProvider` is deliberately left alone: a stock profile
+mounts exactly one fetch provider, which the seam then auto-selects, and restating it would pin a
+backend this plugin does not own.
+
+A profile's own `cordis.patch.yml` is applied **after** every bundle layer, so a profile that wants
+a different search backend sets `searchProvider` there and wins over the shipped pin. Change
+`tavily` to match `providerId` if you renamed it.
 
 ## Failures
 
@@ -160,6 +181,7 @@ leaving the model to guess.
 npm install            # the schema checks need the @deepseek-ai/schemastery peer
 node test/smoke.mjs    # host half: protocols, auth, errors, and the Host's schema projection
 node test/client.mjs   # browser half: bundle contract, slot registration, and a rendered card
+node test/install.mjs  # installer: what it must write, and what it must never write
 ```
 
 Nothing in the tests reaches the network: `test/smoke.mjs` spins up its own stub endpoint on

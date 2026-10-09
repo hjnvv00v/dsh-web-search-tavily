@@ -11,3 +11,6 @@ cordis.y*ml.local
 *.log
 .DS_Store
 Thumbs.db
+
+# The installer test's scratch profile.
+_installer-test/

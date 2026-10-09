@@ -1,0 +1,7 @@
+# dsh bundle patch: inserts this plugin into a profile's layer stack.
+#
+# The inserted row's id is also this plugin's settings namespace, which is what the browser half
+# binds through `ctx.configForms.get('web-search-tavily')`.
+- insert:
+    - id: web-search-tavily
+      name: 'dsh-web-search-tavily'

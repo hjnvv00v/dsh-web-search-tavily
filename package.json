@@ -1,0 +1,70 @@
+{
+  "name": "dsh-web-search-tavily",
+  "version": "0.1.0",
+  "description": "Tavily-compatible web search provider for the DeepSeek Harness web seam (ctx.web): the official Tavily API, a Tavily-shaped relay, or an OpenAI-compatible gateway, all from configuration",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "tavily",
+    "web-search",
+    "ctx.web",
+    "openai-compatible",
+    "relay"
+  ],
+  "license": "MIT",
+  "author": "hjnvv00v",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hjnvv00v/dsh-web-search-tavily.git"
+  },
+  "homepage": "https://github.com/hjnvv00v/dsh-web-search-tavily#readme",
+  "bugs": {
+    "url": "https://github.com/hjnvv00v/dsh-web-search-tavily/issues"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node test/smoke.mjs && node test/client.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "~3.18.4"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  }
+}

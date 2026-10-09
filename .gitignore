@@ -1,0 +1,13 @@
+node_modules/
+
+# The installer's backups of the profile files it edits.
+*.bak
+*.bak-dsh-web-search-tavily
+
+# Local credentials and profile state must never be committed.
+.credentials.y*ml
+cordis.y*ml.local
+
+*.log
+.DS_Store
+Thumbs.db

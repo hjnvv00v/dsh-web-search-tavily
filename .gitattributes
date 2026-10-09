@@ -1,0 +1,5 @@
+# Normalize line endings on commit so the tree is identical on every platform.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

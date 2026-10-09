@@ -157,9 +157,14 @@ leaving the model to guess.
 ## Tests
 
 ```sh
+npm install            # the schema checks need the @deepseek-ai/schemastery peer
 node test/smoke.mjs    # host half: protocols, auth, errors, and the Host's schema projection
 node test/client.mjs   # browser half: bundle contract, slot registration, and a rendered card
 ```
+
+Nothing reaches the network: `test/smoke.mjs` spins up its own stub endpoint on `127.0.0.1`. Run
+without `npm install`, the schema-dependent checks report `skip` rather than failing — they can
+only run when the peer resolves.
 
 `test/smoke.mjs` deliberately round-trips the Config schema through the **host's own** copy of
 `@deepseek-ai/schemastery`: a plugin resolves the peers the Host supplies, and the settings

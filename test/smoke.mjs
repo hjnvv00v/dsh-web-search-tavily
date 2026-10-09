@@ -466,39 +466,50 @@ await check('an unrecognized protocol fails loudly instead of guessing', async (
 
 console.log('\nhost contract')
 
-await check('Config is a schema the Host can project into a settings form', async () => {
-  assert.ok(Config !== undefined, 'Config must be defined — the settings page depends on it')
-  assert.equal(Config.type, 'object')
-  for (const field of ['protocol', 'baseURL', 'apiKey', 'apiKeyEnv', 'model', 'maxResults', 'timeoutMs', 'authStyle']) {
-    assert.equal(Config.dict[field].meta.volatile, true, `${field} must be volatile to appear in a settings form`)
-  }
-  assert.equal(Config.dict.apiKey.meta.role, 'secret')
-  assert.equal(Config.dict.apiKeyEnv.meta.role, 'credential-ref')
-  assert.equal(Config.dict.providerId.meta.volatile, undefined, 'providerId stays YAML-only')
-  assert.equal(Config.dict.extraHeaders.meta.volatile, undefined, 'extraHeaders stays YAML-only')
-})
+// Every check below builds on the Config schema, which only exists when the peer resolves. A bare
+// `git clone` has no node_modules, so the peer can legitimately be absent — skip in that case, but
+// never when the peer IS present, or a broken schema would hide behind a skip.
+const hasSchemastery = await import('@deepseek-ai/schemastery').then(() => true, () => false)
+const NO_PEER = 'peer @deepseek-ai/schemastery is not installed — run npm install'
 
-await check('the Host\'s volatileForm projection keeps exactly the editable fields', async () => {
-  // Mirrors @deepseek-ai/dsh-settings: a form exists only when some field is volatile, and it
-  // carries only the fields beneath a volatile node.
-  const volatileForm = (schema) => {
-    if (schema.meta.volatile) return schema
-    if (schema.type !== 'object') return undefined
-    const dict = Object.fromEntries(Object.entries(schema.dict ?? {}).flatMap(([key, child]) => {
-      const field = volatileForm(child)
-      return field === undefined ? [] : [[key, field]]
-    }))
-    return Object.keys(dict).length === 0 ? undefined : dict
-  }
-  const form = volatileForm(Config)
-  assert.ok(form !== undefined, 'the Host must find at least one volatile field')
-  assert.deepEqual(Object.keys(form).sort(), [
-    'apiKey', 'apiKeyEnv', 'authHeader', 'authScheme', 'authStyle', 'baseURL', 'defaultParameters',
-    'includeAnswer', 'maxResults', 'model', 'protocol', 'searchDepth', 'timeoutMs', 'topic',
-  ])
-})
+if (hasSchemastery) {
+  await check('Config is a schema the Host can project into a settings form', async () => {
+    assert.ok(Config !== undefined, 'Config must be defined — the settings page depends on it')
+    assert.equal(Config.type, 'object')
+    for (const field of ['protocol', 'baseURL', 'apiKey', 'apiKeyEnv', 'model', 'maxResults', 'timeoutMs', 'authStyle']) {
+      assert.equal(Config.dict[field].meta.volatile, true, `${field} must be volatile to appear in a settings form`)
+    }
+    assert.equal(Config.dict.apiKey.meta.role, 'secret')
+    assert.equal(Config.dict.apiKeyEnv.meta.role, 'credential-ref')
+    assert.equal(Config.dict.providerId.meta.volatile, undefined, 'providerId stays YAML-only')
+    assert.equal(Config.dict.extraHeaders.meta.volatile, undefined, 'extraHeaders stays YAML-only')
+  })
 
-if (existsSync(HOST_SCHEMASTERY.replace('file:///', ''))) {
+  await check('the Host\'s volatileForm projection keeps exactly the editable fields', async () => {
+    // Mirrors @deepseek-ai/dsh-settings: a form exists only when some field is volatile, and it
+    // carries only the fields beneath a volatile node.
+    const volatileForm = (schema) => {
+      if (schema.meta.volatile) return schema
+      if (schema.type !== 'object') return undefined
+      const dict = Object.fromEntries(Object.entries(schema.dict ?? {}).flatMap(([key, child]) => {
+        const field = volatileForm(child)
+        return field === undefined ? [] : [[key, field]]
+      }))
+      return Object.keys(dict).length === 0 ? undefined : dict
+    }
+    const form = volatileForm(Config)
+    assert.ok(form !== undefined, 'the Host must find at least one volatile field')
+    assert.deepEqual(Object.keys(form).sort(), [
+      'apiKey', 'apiKeyEnv', 'authHeader', 'authScheme', 'authStyle', 'baseURL', 'defaultParameters',
+      'includeAnswer', 'maxResults', 'model', 'protocol', 'searchDepth', 'timeoutMs', 'topic',
+    ])
+  })
+} else {
+  console.log(`  skip Config is a schema the Host can project into a settings form (${NO_PEER})`)
+  console.log(`  skip the Host's volatileForm projection keeps exactly the editable fields (${NO_PEER})`)
+}
+
+if (hasSchemastery && existsSync(HOST_SCHEMASTERY.replace('file:///', ''))) {
   await check('the running host\'s schemastery rehydrates this schema and resolves a section', async () => {
     const hostZ = (await import(HOST_SCHEMASTERY)).default
     const rebuilt = new hostZ(Config.toJSON())
@@ -517,6 +528,8 @@ if (existsSync(HOST_SCHEMASTERY.replace('file:///', ''))) {
     const rejection = rebuilt['~standard'].validate({ protocol: 'tavily', maxResults: 'three' })
     assert.ok(rejection.issues !== undefined, 'a bad section must be rejected through the standard-schema face')
   })
+} else if (!hasSchemastery) {
+  console.log(`  skip the host schemastery round trip (${NO_PEER})`)
 } else {
   console.log('  skip the host schemastery round trip (extracted host copy not present)')
 }
